@@ -4,7 +4,6 @@
 
 from flask import Flask, render_template, request
 from logging import Formatter, FileHandler
-from forms import *
 from PIL import Image
 from scipy import misc
 import logging
