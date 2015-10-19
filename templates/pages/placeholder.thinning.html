@@ -1,0 +1,20 @@
+{% extends 'layouts/main.html' %}
+{% block title %}Thinning{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Thinning</h1>
+</div>
+
+<div class="row">
+        <div class="col-lg-6">
+          <h2>Sebelum</h2>
+          <img src="{{ url_for('static', filename = 'thinning/B_comic.jpg') }}" height="350">
+       </div>
+        <div class="col-lg-6">
+          <h2>Sesudah</h2>
+          <img src="{{ url_for('static', filename = 'thinning/thinning.png') }}" height="400">
+        </div>
+      </div>
+
+{% endblock %}
