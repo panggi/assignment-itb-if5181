@@ -16,8 +16,8 @@ import copy
 # App Config.
 #----------------------------------------------------------------------------#
 
-# app = Flask(__name__)
-app = Flask(__name__, static_url_path = "", static_folder = "tmp")
+app = Flask(__name__)
+# app = Flask(__name__, static_url_path = "", static_folder = "static")
 app.config.from_object('config')
 
 #----------------------------------------------------------------------------#
@@ -32,62 +32,63 @@ def home():
 
 @app.route('/histogram')
 def histogram():
-    img = Image.open(os.path.dirname(os.path.realpath(__file__)) + '/tmp/histogram/lena.jpg')
-    img = list(img.getdata())
+    hist_source_img = Image.open(os.path.dirname(os.path.realpath(__file__)) + '/static/histogram/lena.jpg')
+    hist_source_img = list(hist_source_img.getdata())
   
     hist_r = [0]*256
     hist_g = [0]*256
     hist_b = [0]*256
   
-    for pixel in img:
+    for pixel in hist_source_img:
       hist_r[pixel[0]] += 1
       hist_g[pixel[1]] += 1
       hist_b[pixel[2]] += 1
   
     x = range(len(hist_r))
     plt.plot(x,hist_r,'r', x,hist_g,'g', x,hist_b,'b')
-    plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/tmp/histogram/histogram.png')
+    plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/static/histogram/histogram02.png')
+    plt.close()
   
     return render_template('pages/placeholder.histogram.html')
 
 @app.route('/chaincode')
 def chaincode():
-    global img
-    global bwim
+    global chaincode_source_img
+    global chaincode_bwim
     global binary
-    global bw
-    global b
+    global chaincode_bw
+    global point
     global firstpix
-    img = misc.imread(os.path.dirname(os.path.realpath(__file__)) + '/tmp/chaincode/A_arial.jpg')
-    bwim = (0.2989 * img[:,:,0] + 0.587 * img[:,:,1] + 0.114 * img[:,:,2]).astype(np.uint8) #grayscale
-    binary =  bwim < 128 #blackwhite
-    bw = np.argwhere(binary)[0] #return index dari array hasil dari operasi boolean/ index dimana bwim < 128 rubah jadi list biasa
-    b = (bw - (0,1)).tolist()
-    firstpix = bw.tolist()
+    chaincode_source_img = misc.imread(os.path.dirname(os.path.realpath(__file__)) + '/static/chaincode/A_arial.jpg')
+    chaincode_bwim = (0.2989 * chaincode_source_img[:,:,0] + 0.587 * chaincode_source_img[:,:,1] + 0.114 * chaincode_source_img[:,:,2]).astype(np.uint8) #grayscale
+    binary =  chaincode_bwim < 128 #blackwhite
+    chaincode_bw = np.argwhere(binary)[0] #return index dari array hasil dari operasi boolean/ index dimana chaincode_bwim < 128 rubah jadi list biasa
+    point = (chaincode_bw - (0,1)).tolist()
+    firstpix = chaincode_bw.tolist()
     chaincode = getChaincode()
     kodebelok = KodeBelok(chaincode)
 
     return render_template('pages/placeholder.chaincode.html', chaincode=chaincode, kodebelok=kodebelok)
 
-def getDirection(firstpix, b):
+def getDirection(firstpix, point):
     dir = 0
     row = firstpix[0]
     col = firstpix[1]
-    if b == [row, col+1]:
+    if point == [row, col+1]:
         dir = 0
-    if b == [row-1, col+1]:
+    if point == [row-1, col+1]:
         dir = 1
-    if b == [row-1, col]:
+    if point == [row-1, col]:
         dir = 2
-    if b == [row-1, col-1]:
+    if point == [row-1, col-1]:
         dir = 3
-    if b == [row, col-1]:
+    if point == [row, col-1]:
         dir = 4
-    if b == [row+1, col-1]:
+    if point == [row+1, col-1]:
         dir = 5
-    if b == [row+1, col]:
+    if point == [row+1, col]:
         dir = 6
-    if b == [row+1, col+1]:
+    if point == [row+1, col+1]:
         dir = 7
 
     return dir
@@ -117,7 +118,7 @@ def getIndex(dir, firstpix):
 def getChaincode():
     chainCode = []
     curInd = firstpix
-    backtrack = b
+    backtrack = point
     flag = copy.copy(curInd)
     flagstat = False
 
@@ -158,30 +159,31 @@ def KodeBelok(code):
     return belok
 
 def wr(content):
-    with open(os.path.dirname(os.path.realpath(__file__)) + '/tmp/chaincode/kamus','w') as f:
+    with open(os.path.dirname(os.path.realpath(__file__)) + '/static/chaincode/kamus','w') as f:
         f.write(str(content))
 
 def rd(content):
-    with open(os.path.dirname(os.path.realpath(__file__)) + '/tmp/chaincode/kamus','r') as f:
+    with open(os.path.dirname(os.path.realpath(__file__)) + '/static/chaincode/kamus','r') as f:
         raw = f.read().split('\n')
 
 
 @app.route('/thinning')
 def thinning():
-    global img
-    global bw
-    img = misc.imread(os.path.dirname(os.path.realpath(__file__)) + '/tmp/thinning/B_comic.jpg')
-    bw = np.zeros((img.shape[0], img.shape[1]))
+    global thinning_source_img
+    global thinning_bw
+    thinning_source_img = misc.imread(os.path.dirname(os.path.realpath(__file__)) + '/static/thinning/B_comic.jpg')
+    thinning_bw = np.zeros((thinning_source_img.shape[0], thinning_source_img.shape[1]))
     getBW()
-    thinning = zhangSuen(bw)
+    thinning = zhangSuen(thinning_bw)
     return render_template('pages/placeholder.thinning.html', thinning=thinning)
+
 def getBW():
-    for row in xrange(img.shape[0]):
-        for col in xrange(img.shape[1]):
-            if(np.sum(img[row][col]))/3 > 128:
-                bw[row][col] = 0
+    for row in xrange(thinning_source_img.shape[0]):
+        for col in xrange(thinning_source_img.shape[1]):
+            if(np.sum(thinning_source_img[row][col]))/3 > 128:
+                thinning_bw[row][col] = 0
             else:
-                bw[row][col] = 1
+                thinning_bw[row][col] = 1
 
 def zhangSuen(obj):
     print obj.shape
@@ -236,7 +238,8 @@ def zhangSuen(obj):
         for row, col in erase: obj[row][col] = 0
 
     plt.imshow(obj, cmap = 'Greys')
-    plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/tmp/thinning/thinning.png')
+    plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/static/thinning/thinning.png')
+    plt.close()
 
 
 # Error handlers.
