@@ -34,21 +34,21 @@ def home():
 def histogram():
     hist_source_img = Image.open(os.path.dirname(os.path.realpath(__file__)) + '/static/histogram/lena.jpg')
     hist_source_img = list(hist_source_img.getdata())
-  
+
     hist_r = [0]*256
     hist_g = [0]*256
     hist_b = [0]*256
-  
+
     for pixel in hist_source_img:
       hist_r[pixel[0]] += 1
       hist_g[pixel[1]] += 1
       hist_b[pixel[2]] += 1
-  
+
     x = range(len(hist_r))
     plt.plot(x,hist_r,'r', x,hist_g,'g', x,hist_b,'b')
-    plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/static/histogram/histogram02.png')
+    plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/static/histogram/histogram.png')
     plt.close()
-  
+
     return render_template('pages/placeholder.histogram.html')
 
 @app.route('/chaincode')
@@ -65,12 +65,12 @@ def chaincode():
     chaincode_bw = np.argwhere(binary)[0] #return index dari array hasil dari operasi boolean/ index dimana chaincode_bwim < 128 rubah jadi list biasa
     point = (chaincode_bw - (0,1)).tolist()
     firstpix = chaincode_bw.tolist()
-    chaincode = getChaincode()
-    kodebelok = KodeBelok(chaincode)
+    chaincode = get_chaincode()
+    kodebelok = kode_belok(chaincode)
 
     return render_template('pages/placeholder.chaincode.html', chaincode=chaincode, kodebelok=kodebelok)
 
-def getDirection(firstpix, point):
+def get_direction(firstpix, point):
     dir = 0
     row = firstpix[0]
     col = firstpix[1]
@@ -93,7 +93,7 @@ def getDirection(firstpix, point):
 
     return dir
 
-def getIndex(dir, firstpix):
+def get_index(dir, firstpix):
     row = firstpix[0]
     col = firstpix[1]
     if dir == 0:
@@ -115,7 +115,7 @@ def getIndex(dir, firstpix):
 
     return grid
 
-def getChaincode():
+def get_chaincode():
     chainCode = []
     curInd = firstpix
     backtrack = point
@@ -124,11 +124,11 @@ def getChaincode():
 
     while flagstat == False:
         pixVal = binary[backtrack[0],backtrack[1]]
-        direction = getDirection(curInd,backtrack)
+        direction = get_direction(curInd,backtrack)
 
         while pixVal != True:
             direction = (direction+1) % 8
-            newpixel = getIndex(direction, curInd)
+            newpixel = get_index(direction, curInd)
             pixVal = binary[newpixel[0],newpixel[1]]
 
             if pixVal == False:
@@ -144,7 +144,7 @@ def getChaincode():
     return strcc
 
 
-def KodeBelok(code):
+def kode_belok(code):
     belok = ""
     for i in range(0,len(code)-1):
         dir = int(code[i])
@@ -158,6 +158,7 @@ def KodeBelok(code):
             continue
     return belok
 
+# not used yet
 def wr(content):
     with open(os.path.dirname(os.path.realpath(__file__)) + '/static/chaincode/kamus','w') as f:
         f.write(str(content))
@@ -173,11 +174,11 @@ def thinning():
     global thinning_bw
     thinning_source_img = misc.imread(os.path.dirname(os.path.realpath(__file__)) + '/static/thinning/B_comic.jpg')
     thinning_bw = np.zeros((thinning_source_img.shape[0], thinning_source_img.shape[1]))
-    getBW()
-    thinning = zhangSuen(thinning_bw)
+    get_bw()
+    thinning = zhang_suen(thinning_bw)
     return render_template('pages/placeholder.thinning.html', thinning=thinning)
 
-def getBW():
+def get_bw():
     for row in xrange(thinning_source_img.shape[0]):
         for col in xrange(thinning_source_img.shape[1]):
             if(np.sum(thinning_source_img[row][col]))/3 > 128:
@@ -185,7 +186,7 @@ def getBW():
             else:
                 thinning_bw[row][col] = 1
 
-def zhangSuen(obj):
+def zhang_suen(obj):
     print obj.shape
     erase = [0]
     while erase:

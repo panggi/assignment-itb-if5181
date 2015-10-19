@@ -81,15 +81,20 @@
       {% endwith %}
 
       {% block content %}{% endblock %}
-      
     </main>
 
   </div>
 
   <div id="footer">
     <div class="container">
-      <p>Dhika Rizki Anbiya (23515029) - Fatan Kasyidi (23515025) - Panggi Libersa Jasri Akadol (23515044)</p>
-      {% block footer %}{% endblock %}
+      <div class="row row-centered">
+        {% block footer %}
+        <br />
+        <div class="col-xs-3 col-centered"></div>
+        <div class="col-xs-12 col-centered">Dhika Rizki Anbiya (23515029) - Fatan Kasyidi (23515025) - Panggi Libersa Jasri Akadol (23515044)</div>
+        <div class="col-xs-3 col-centered"></div>
+        {% endblock %}
+      </div>
     </div>
   </div>
 
