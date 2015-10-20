@@ -6,11 +6,21 @@ from flask import Flask, render_template, request
 from logging import Formatter, FileHandler
 from PIL import Image
 from scipy import misc
+from werkzeug import secure_filename
+from functools import wraps, update_wrapper
+from datetime import datetime
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import copy
+import uuid
+
+#----------------------------------------------------------------------------#
+# Constants
+#----------------------------------------------------------------------------#
+UPLOAD_FOLDER = os.path.dirname(os.path.realpath(__file__)) + '/static/uploads/'
+ALLOWED_EXTENSIONS = set(['png', 'jpg'])
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -19,39 +29,52 @@ import copy
 app = Flask(__name__)
 # app = Flask(__name__, static_url_path = "", static_folder = "static")
 app.config.from_object('config')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 #----------------------------------------------------------------------------#
 # Controllers.
 #----------------------------------------------------------------------------#
 
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 @app.route('/')
 def home():
     return render_template('pages/placeholder.home.html')
 
 
-@app.route('/histogram')
+@app.route('/histogram', methods=['GET', 'POST'])
 def histogram():
-    hist_source_img = Image.open(os.path.dirname(os.path.realpath(__file__)) + '/static/histogram/lena.jpg')
-    hist_source_img = list(hist_source_img.getdata())
+    if request.method == 'GET':
+        return render_template('pages/placeholder.histogram.html')
 
-    hist_r = [0]*256
-    hist_g = [0]*256
-    hist_b = [0]*256
+    if request.method == 'POST':
+        random_char = str(uuid.uuid4())
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'histogram_image_source_' + random_char))
 
-    for pixel in hist_source_img:
-      hist_r[pixel[0]] += 1
-      hist_g[pixel[1]] += 1
-      hist_b[pixel[2]] += 1
+        hist_source_img = Image.open(os.path.dirname(os.path.realpath(__file__)) + '/static/uploads/histogram_image_source_' + random_char)
+        hist_source_img = list(hist_source_img.getdata())
 
-    x = range(len(hist_r))
-    plt.plot(x,hist_r,'r', x,hist_g,'g', x,hist_b,'b')
-    plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/static/histogram/histogram.png')
-    plt.close()
+        hist_r = [0]*256
+        hist_g = [0]*256
+        hist_b = [0]*256
 
-    return render_template('pages/placeholder.histogram.html')
+        for pixel in hist_source_img:
+          hist_r[pixel[0]] += 1
+          hist_g[pixel[1]] += 1
+          hist_b[pixel[2]] += 1
 
-@app.route('/chaincode')
+        x = range(len(hist_r))
+        plt.plot(x,hist_r,'r', x,hist_g,'g', x,hist_b,'b')
+        plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/static/histogram/histogram_' + random_char + '.png')
+        plt.close()
+
+        return render_template('pages/placeholder.histogram.post.html', random_char=random_char)
+
+@app.route('/chaincode', methods=['GET', 'POST'])
 def chaincode():
     global chaincode_source_img
     global chaincode_bwim
@@ -59,7 +82,17 @@ def chaincode():
     global chaincode_bw
     global point
     global firstpix
-    chaincode_source_img = misc.imread(os.path.dirname(os.path.realpath(__file__)) + '/static/chaincode/A_arial.jpg')
+    random_char_chaincode = str(uuid.uuid4())
+
+    if request.method == 'GET':
+        font_image = '/static/chaincode/A_arial.jpg'
+    if request.method == 'POST':
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'chaincode_' + random_char_chaincode))
+        font_image = '/static/uploads/chaincode_' + random_char_chaincode
+
+    chaincode_source_img = misc.imread(os.path.dirname(os.path.realpath(__file__)) + font_image)
     chaincode_bwim = (0.2989 * chaincode_source_img[:,:,0] + 0.587 * chaincode_source_img[:,:,1] + 0.114 * chaincode_source_img[:,:,2]).astype(np.uint8) #grayscale
     binary =  chaincode_bwim < 128 #blackwhite
     chaincode_bw = np.argwhere(binary)[0] #return index dari array hasil dari operasi boolean/ index dimana chaincode_bwim < 128 rubah jadi list biasa
@@ -68,7 +101,11 @@ def chaincode():
     chaincode = get_chaincode()
     kodebelok = kode_belok(chaincode)
 
-    return render_template('pages/placeholder.chaincode.html', chaincode=chaincode, kodebelok=kodebelok)
+    if request.method == 'GET':
+        return render_template('pages/placeholder.chaincode.html', chaincode=chaincode, kodebelok=kodebelok)
+
+    if request.method == 'POST':
+        return render_template('pages/placeholder.chaincode.post.html', chaincode=chaincode, kodebelok=kodebelok, random_char_chaincode=random_char_chaincode)
 
 def get_direction(firstpix, point):
     dir = 0
@@ -168,15 +205,33 @@ def rd(content):
         raw = f.read().split('\n')
 
 
-@app.route('/thinning')
+@app.route('/thinning', methods=['GET', 'POST'])
 def thinning():
     global thinning_source_img
     global thinning_bw
-    thinning_source_img = misc.imread(os.path.dirname(os.path.realpath(__file__)) + '/static/thinning/B_comic.jpg')
+    global random_char_thinning
+
+    random_char_thinning = str(uuid.uuid4())
+
+    if request.method == 'GET':
+        font_image = '/static/thinning/B_comic.jpg'
+    if request.method == 'POST':
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'thinning_' + random_char_thinning))
+        font_image = '/static/uploads/thinning_' + random_char_thinning
+
+    thinning_source_img = misc.imread(os.path.dirname(os.path.realpath(__file__)) + font_image)
     thinning_bw = np.zeros((thinning_source_img.shape[0], thinning_source_img.shape[1]))
     get_bw()
-    thinning = zhang_suen(thinning_bw)
-    return render_template('pages/placeholder.thinning.html', thinning=thinning)
+
+    if request.method == 'GET':
+        thinning = zhang_suen(thinning_bw, 'get')
+        return render_template('pages/placeholder.thinning.html', thinning=thinning)
+
+    if request.method == 'POST':
+        thinning = zhang_suen(thinning_bw, 'post')
+        return render_template('pages/placeholder.thinning.post.html', thinning=thinning, random_char_thinning=random_char_thinning)
 
 def get_bw():
     for row in xrange(thinning_source_img.shape[0]):
@@ -186,7 +241,7 @@ def get_bw():
             else:
                 thinning_bw[row][col] = 1
 
-def zhang_suen(obj):
+def zhang_suen(obj, method):
     print obj.shape
     erase = [0]
     while erase:
@@ -239,8 +294,14 @@ def zhang_suen(obj):
         for row, col in erase: obj[row][col] = 0
 
     plt.imshow(obj, cmap = 'Greys')
-    plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/static/thinning/thinning.png')
-    plt.close()
+
+    if method == 'get':
+        plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/static/thinning/thinning.png')
+        plt.close()
+
+    if method == 'post':
+        plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/static/uploads/thinning_result_' + random_char_thinning + '.png')
+        plt.close()
 
 
 # Error handlers.

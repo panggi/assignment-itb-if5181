@@ -1,9 +1,9 @@
 {% extends 'layouts/main.html' %}
-{% block title %}Histogram{% endblock %}
+{% block title %}Chain Code{% endblock %}
 {% block content %}
 
 <div class="page-header">
-  <h1>Histogram</h1>
+  <h1>Chain Code</h1>
 </div>
 
 <div class="row">
@@ -18,12 +18,16 @@
 <div class="row">
   <div class="col-lg-6">
     <h2>Sebelum</h2>
-    <img src="{{ url_for('static', filename = 'uploads/histogram_image_source') }}" height="350">
+    <img src="{{ url_for('static', filename = 'uploads/chaincode_' + random_char_chaincode) }}" height="350">
   </div>
   <div class="col-lg-6">
     <h2>Sesudah</h2>
-    <img src="{{ url_for('static', filename = 'histogram/histogram.png') }}" height="400">
+    <p>Chain Code</p>
+    <textarea class="form-control" rows="5" id="chaincode">{{ chaincode }}</textarea>
+    <p>Kode Belok</p>
+    <textarea class="form-control" rows="5" id="kodebelok">{{ kodebelok }}</textarea>
   </div>
 </div>
+
 
 {% endblock %}
