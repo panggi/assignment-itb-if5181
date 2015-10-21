@@ -283,7 +283,7 @@ def thinning():
     thinning_bw = np.zeros((thinning_source_img.shape[0], thinning_source_img.shape[1]))
     get_bw()
 
-    tulang = zhang_suen(thinning_bw, 'get')
+    tulang = zhang_suen(thinning_bw)
     smpg = simpang(tulang)
     ujg = ujung(tulang)
     training_data = retrieve_data_training()
@@ -305,7 +305,7 @@ def get_bw():
             else:
                 thinning_bw[row][col] = 1
 
-def zhang_suen(obj, method):
+def zhang_suen(obj, method='GET'):
     print obj.shape
     erase = [0]
     while erase:
