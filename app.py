@@ -82,15 +82,26 @@ def chaincode():
     global chaincode_bw
     global point
     global firstpix
+    global alphanumeric
+
+    alphanumeric = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
+        'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0','1', '2',
+        '3', '4', '5', '6', '7', '8', '9']
+
     random_char_chaincode = str(uuid.uuid4())
 
     if request.method == 'GET':
-        font_image = '/static/chaincode/A_arial.jpg'
+        font_image = '/static/chaincode/H.jpg'
     if request.method == 'POST':
         file = request.files['file']
         if file and allowed_file(file.filename):
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'chaincode_' + random_char_chaincode))
         font_image = '/static/uploads/chaincode_' + random_char_chaincode
+
+    chaincode_dic = open(os.path.dirname(os.path.realpath(__file__)) + '/static/dictionary/chaincode_arial.txt', 'r')
+    belok_dic = open(os.path.dirname(os.path.realpath(__file__)) + '/static/dictionary/kode_belok_arial.txt', 'r')
+    dictionary_cc = np.loadtxt(chaincode_dic, dtype = str, delimiter='||')
+    dictionary_kb = np.loadtxt(belok_dic, dtype = str, delimiter='||')
 
     chaincode_source_img = misc.imread(os.path.dirname(os.path.realpath(__file__)) + font_image)
     chaincode_bwim = (0.2989 * chaincode_source_img[:,:,0] + 0.587 * chaincode_source_img[:,:,1] + 0.114 * chaincode_source_img[:,:,2]).astype(np.uint8) #grayscale
@@ -101,11 +112,13 @@ def chaincode():
     chaincode = get_chaincode()
     kodebelok = kode_belok(chaincode)
 
+    classification = classify(chaincode, dictionary_cc, kodebelok, dictionary_kb)
+
     if request.method == 'GET':
-        return render_template('pages/placeholder.chaincode.html', chaincode=chaincode, kodebelok=kodebelok)
+        return render_template('pages/placeholder.chaincode.html', chaincode=chaincode, kodebelok=kodebelok, classification=classification)
 
     if request.method == 'POST':
-        return render_template('pages/placeholder.chaincode.post.html', chaincode=chaincode, kodebelok=kodebelok, random_char_chaincode=random_char_chaincode)
+        return render_template('pages/placeholder.chaincode.post.html', chaincode=chaincode, kodebelok=kodebelok, random_char_chaincode=random_char_chaincode, classification=classification)
 
 def get_direction(firstpix, point):
     dir = 0
@@ -195,15 +208,60 @@ def kode_belok(code):
             continue
     return belok
 
-# not used yet
-def wr(content):
-    with open(os.path.dirname(os.path.realpath(__file__)) + '/static/chaincode/kamus','w') as f:
-        f.write(str(content))
+def levenshtein(s1, s2):
+    if len(s1) < len(s2):
+        return levenshtein(s2, s1)
 
-def rd(content):
-    with open(os.path.dirname(os.path.realpath(__file__)) + '/static/chaincode/kamus','r') as f:
-        raw = f.read().split('\n')
+    # len(s1) >= len(s2)
+    if len(s2) == 0:
+        return len(s1)
 
+    previous_row = range(len(s2) + 1)
+    for i, c1 in enumerate(s1):
+        current_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = previous_row[j + 1] + 1 # j+1 instead of j since previous_row and current_row are one character longer
+            deletions = current_row[j] + 1       # than s2
+            substitutions = previous_row[j] + (c1 != c2)
+            current_row.append(min(insertions, deletions, substitutions))
+        previous_row = current_row
+
+    return previous_row[-1]
+
+def classify(cc, dictionaryCC, belok, dictionaryKB):
+    plateNum = ""
+    # iterate every feature extracted from test picture
+    # plateCC = list of chain codes from test picture
+    # plateKB = list of kode belok from test picture
+    # dictionaryXX = list of features from training picture
+    # for every index in plateCC, iterate this:
+
+    matchScore = [] # store total matching score
+    matchScoreCC = [] # store matching score according to chain code
+    matchScoreKB = [] # store matching score according to kode belok
+
+        # compare every feature with feature in dictionary
+        # for every index in dictionaryCC, iterate this:
+    for j in xrange(len(dictionaryCC)):
+
+        # for every chain code in dictionary, calculate its
+        # levenshtein distance
+        # save it to matchScoreCC
+        distanceCC = levenshtein(cc, dictionaryCC[j])
+        matchScoreCC.append(distanceCC)
+
+        # do the same thing with kode belok
+        # save it to matchScoreKB
+        distanceKB = levenshtein(belok, dictionaryKB[j])
+        matchScoreKB.append(distanceKB)
+
+        # sum each score in matchScoreCC with its matchScoreKB counterpart
+        score = matchScoreCC[j]+matchScoreKB[j]
+        matchScore.append(score)
+
+    chosen = matchScore.index(min(matchScore))
+    plateNum += alphanumeric[chosen]
+    return plateNum
 
 @app.route('/thinning', methods=['GET', 'POST'])
 def thinning():
