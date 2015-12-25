@@ -60,10 +60,10 @@
                 <li {% if request.endpoint == 'chaincode' %} class="active" {% endif %}><a href="{{ url_for('chaincode') }}">Chain Code</a></li>
                 <li {% if request.endpoint == 'thinning' %} class="active" {% endif %}><a href="{{ url_for('thinning') }}">Thinning</a></li>
                 <li {% if request.endpoint == 'thresholding' %} class="active" {% endif %}><a href="{{ url_for('thresholding') }}">Thresholding</a></li>
-                <li {% if request.endpoint == 'faceparts' %} class="active" {% endif %}><a href="{{ url_for('faceparts') }}">Face Parts</a></li>
                 <li {% if request.endpoint == 'sobel' %} class="active" {% endif %}><a href="{{ url_for('sobel') }}">Sobel Edge Detection</a></li>
                 <li {% if request.endpoint == 'prewitt' %} class="active" {% endif %}><a href="{{ url_for('prewitt') }}">Prewitt Edge Detection</a></li>
                 <li {% if request.endpoint == 'kirsch' %} class="active" {% endif %}><a href="{{ url_for('kirsch') }}">Kirsch Edge Detection</a></li>
+                <li {% if request.endpoint == 'faceparts' %} class="active" {% endif %}><a href="{{ url_for('faceparts') }}">Face Parts</a></li>
               </ul>
             </li>
           </ul>
