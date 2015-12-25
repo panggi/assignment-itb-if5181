@@ -1,3 +1,5 @@
+### BAD CODE ALERT!! We didn't do it with clean code in mind, just for finishing the assignment.. Thanks!
+
 ### How to run (Centos 7)
 
 1. Install the native dependencies for compiling application dependencies (Centos 7):
