@@ -7,7 +7,9 @@
   $ sudo yum install -y libjpeg-devel lapack-devel openssl-devel bzip2-devel sqlite-devel readline-devel libpng-devel freetype-devel wget
   ```
 
-2. Install Python 2.7.10 using pyenv:
+2. Install OpenCV using this tutorial : http://docs.opencv.org/master/dd/dd5/tutorial_py_setup_in_fedora.html
+
+3. Install Python 2.7.10 using pyenv:
   ```
   $ git clone https://github.com/yyuu/pyenv.git ~/.pyenv
   $ echo 'export PYENV_ROOT="$HOME/.pyenv"' >> ~/.bash_profile
@@ -18,33 +20,33 @@
   $ pyenv global 2.7.10
   ```
 
-3. Install pip:
+4. Install pip:
   ```
   $ wget https://bootstrap.pypa.io/get-pip.py
-  $ python pip
+  $ python get-pip.py
   ```
 
-4. Clone the repo:
+5. Clone the repo:
   ```
   $ git clone https://github.com/panggi/assignment-itb-if5181.git
   $ cd assignment-itb-if5181
   ```
 
-5. Initialize and activate a virtualenv:
+6. Initialize and activate a virtualenv:
   ```
   $ pip install virtualenv
   $ virtualenv --no-site-packages env
   $ source env/bin/activate
   ```
 
-6. Install the application dependencies:
+7. Install the application dependencies:
   ```
   $ pip install -r requirements.txt
   ```
 
-7. Run the development server:
+8. Run the development server:
   ```
   $ python app.py
   ```
 
-8. Navigate to [http://localhost:5181](http://localhost:5181)
+9. Navigate to [http://localhost:5181](http://localhost:5181)

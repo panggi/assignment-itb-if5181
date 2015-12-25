@@ -9,18 +9,21 @@ from scipy import misc
 from werkzeug import secure_filename
 from functools import wraps, update_wrapper
 from datetime import datetime
+from numpy import *
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import copy
 import uuid
+import cv2
+import random
 
 #----------------------------------------------------------------------------#
 # Constants
 #----------------------------------------------------------------------------#
 UPLOAD_FOLDER = os.path.dirname(os.path.realpath(__file__)) + '/static/uploads/'
-ALLOWED_EXTENSIONS = set(['png', 'jpg'])
+ALLOWED_EXTENSIONS = set(['png', 'jpg', 'JPG', 'PNG'])
 
 #----------------------------------------------------------------------------#
 # App Config.
@@ -444,6 +447,133 @@ def testing_data(training_int,u,s):
         i += 1
     return some
 
+@app.route('/thresholding', methods=['GET', 'POST'])
+def thresholding():
+    if request.method == 'GET':
+        return render_template('pages/placeholder.otsu.html')
+
+    if request.method == 'POST':
+        random_char = str(uuid.uuid4())
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'otsu_image_source_' + random_char))
+
+        #convert grayscale
+        img = misc.imread(os.path.join(app.config['UPLOAD_FOLDER'], 'otsu_image_source_' + random_char))
+        grayscale = img.dot( [0.299, 0.587, 0.144])
+        rows, cols = np.shape(grayscale)
+
+        #create 256 histogram
+        hist = np.histogram(grayscale, 256)[0]
+        total = rows * cols
+        thre = otsu(hist, total)
+
+        figure  = plt.figure( figsize=(14, 6) )
+        figure.canvas.set_window_title( 'Otsu thresholding' )
+
+        axes    = figure.add_subplot(121)
+        axes.set_title('Original')
+        axes.get_xaxis().set_visible( False )
+        axes.get_yaxis().set_visible( False )
+        axes.imshow( img, cmap='Greys_r' )
+
+        axes    = figure.add_subplot(122)
+        axes.set_title('Otsu thresholding')
+        axes.get_xaxis().set_visible( False )
+        axes.get_yaxis().set_visible( False )
+        axes.imshow( grayscale >= thre, cmap='Greys_r' )
+
+        plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/static/uploads/otsu_result_' + random_char + '.png')
+        plt.close()
+
+        return render_template('pages/placeholder.otsu.post.html', random_char=random_char)
+
+def otsu(hist, total):
+    bins = len(hist)
+
+    sum_of_total = 0 #total pixel
+    for x in xrange(0, bins):
+        sum_of_total += x * hist[x]
+
+    weight_back = 0.0
+    sum_back = 0.0
+    variance = []
+
+    for thres in xrange(0, bins):
+        weight_back += hist[thres]
+        if weight_back == 0:
+            continue
+
+        weight_fore = total - weight_back
+        if weight_fore == 0:
+            break
+
+        sum_back += thres * hist[thres]
+        mean_back = sum_back/ weight_back
+        mean_fore = (sum_of_total - sum_back)/ weight_fore
+
+        variance.append( weight_back * weight_fore * (mean_back - mean_fore)**2 )
+
+    # find the threshold with maximum variances between classes
+	otsu_thres = argmax(variance)
+    return otsu_thres
+
+@app.route('/faceparts', methods=['GET', 'POST'])
+def faceparts():
+    face_cascade = cv2.CascadeClassifier(os.path.dirname(os.path.realpath(__file__)) + '/static/haarcascades/haarcascade_frontalface_default.xml')
+    eye_cascade = cv2.CascadeClassifier(os.path.dirname(os.path.realpath(__file__)) + '/static/haarcascades/haarcascade_eye.xml')
+    mouth_cascade = cv2.CascadeClassifier(os.path.dirname(os.path.realpath(__file__)) + '/static/haarcascades/Mouth.xml')
+    nose_cascade = cv2.CascadeClassifier(os.path.dirname(os.path.realpath(__file__)) + '/static/haarcascades/Nose.xml')
+
+    if request.method == 'GET':
+        return render_template('pages/placeholder.faceparts.html')
+
+    if request.method == 'POST':
+        random_char = str(uuid.uuid4())
+        file = request.files['file']
+        if file and allowed_file(file.filename):
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], 'faceparts_image_source_' + random_char))
+
+        #convert grayscale
+        img = misc.imread(os.path.join(app.config['UPLOAD_FOLDER'], 'faceparts_image_source_' + random_char))
+        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        faces = face_cascade.detectMultiScale(gray, 1.3, 4)
+
+        for (x,y,w,h) in faces:
+            cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
+            roi_gray = gray[y:y+h, x:x+w]
+            roi_color = img[y:y+h, x:x+w]
+            eyes = eye_cascade.detectMultiScale(roi_gray)
+            # for (ex,ey,ew,eh) in eyes:
+            #     cv2.rectangle(roi_color,(ex,ey),(ex+ew,ey+eh),(0,255,0),2)
+
+            i = 0
+            while i < len(eyes)-1:
+                ex1,ey1,ew1,eh1 = eyes[i]
+                ex2,ey2,ew2,eh2 = eyes[i+1]
+                if abs(ex1-ex2) > 20 and abs(ey1-ey2)<10:
+                    cv2.rectangle(roi_color,(ex1,ey1),(ex1+ew1,ey1+eh1),(0,255,0),2)
+                    cv2.rectangle(roi_color,(ex2,ey2),(ex2+ew2,ey2+eh2),(0,255,0),2)
+
+                i = i+1
+            nose = nose_cascade.detectMultiScale(roi_gray)
+            for (nx,ny,nw,nh) in nose:
+               cv2.rectangle(roi_color,(nx,ny),(nx+nw,ny+nh),(0,255,0),2)
+            mouth = mouth_cascade.detectMultiScale(roi_gray)
+            for (mx,my,mw,mh) in mouth:
+                if (my > my+(mh/2)):
+                    cv2.rectangle(roi_color,(mx,my),(mx+mw,my+mh),(0,255,0),2)
+
+        plt.imshow(img)
+        plt.savefig(os.path.dirname(os.path.realpath(__file__)) + '/static/uploads/faceparts_result_' + random_char + '.png')
+        plt.close()
+
+        return render_template('pages/placeholder.faceparts.post.html', random_char=random_char)
+
+#@app.route('/edgedetection', methods=['GET', 'POST'])
+#def faceparts():
+
 # Error handlers.
 
 @app.errorhandler(500)
@@ -465,6 +595,7 @@ if not app.debug:
     file_handler.setLevel(logging.INFO)
     app.logger.addHandler(file_handler)
     app.logger.info('errors')
+
 
 #----------------------------------------------------------------------------#
 # Launch.

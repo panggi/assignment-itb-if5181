@@ -1,0 +1,29 @@
+{% extends 'layouts/main.html' %}
+{% block title %}Face parts{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>Face parts</h1>
+</div>
+
+<div class="row">
+  <div class="col-lg-6">
+    <h2>Unggah Gambar</h2>
+    <form action="" method=post enctype=multipart/form-data>
+      <p><input type=file name=file></p>
+      <p><button type="submit" class="btn btn-success">Upload</button></p>
+    </form>
+  </div>
+</div>
+<div class="row">
+  <div class="col-lg-6">
+    <h2>Sebelum</h2>
+    <img src="{{ url_for('static', filename = 'uploads/faceparts_image_source_' + random_char) }}" height="350">
+  </div>
+  <div class="col-lg-6">
+    <h2>Sesudah</h2>
+    <img src="{{ url_for('static', filename = 'uploads/faceparts_result_' + random_char + '.png') }}" height="400">
+  </div>
+</div>
+
+{% endblock %}
